@@ -1,0 +1,19 @@
+{
+  "name": "finalyearproject_backend",
+  "version": "1.0.0",
+  "description": "Backend Directory of my Final Year Project",
+  "main": "server.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/cheankoh/FinalYearProject_backend.git"
+  },
+  "author": "Chean Koh",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/cheankoh/FinalYearProject_backend/issues"
+  },
+  "homepage": "https://github.com/cheankoh/FinalYearProject_backend#readme"
+}
