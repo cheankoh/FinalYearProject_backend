@@ -1,21 +1,29 @@
-//Routes for users
+// Routes for users
 module.exports = app => {
-    const users = require("../controllers/users.controller.js");
-  
-    var router = require("express").Router();
+  const users = require("../controllers/user.controller.js");
 
-    //Login to the application
-    router.post("/login", users.login);
+  var router = require("express").Router();
 
-    //Share a Audiobook with a peer.
-    router.post("/share", users.share);
+  // Login to the application
+  router.post("/login", users.login);
 
-    //Add Bookmark to the progress of a specific book.
-    router.put('/bookmark', users.addBookmark);
+  // Link Metamask wallet to the account
+  router.post("/login", users.linkWallet);
 
-    //Delete Bookmark to the progress of a specific book.
+  // Claim its steps for steptokens.
+  router.post("/claim", users.claim);
 
-    router.delete('/bookmark', users.removeBookmark);
+  // Auction NFT onto the auction page
+  router.post('/auction', users.auction);
 
-    app.use('/api/users', router);
-  };
+  // Bid for other's NFT
+  router.post('/bid', users.bid);
+
+  // Level Up NFT
+  router.put('/nft/levelUp', users.levelUp);
+
+  // Change the name of NFT
+  router.put('/nft/changeName', users.changeName)
+
+  app.use('/api/users', router);
+};
