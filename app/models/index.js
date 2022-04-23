@@ -1,7 +1,6 @@
 const dbConfig = require("../config/db.config.js");
 
 const mongoose = require("mongoose");
-const { CLIENT_NO_SCHEMA } = require("mysql/lib/protocol/constants/client");
 mongoose.Promise = global.Promise;
 // async function main() {
 //     await mongoose.connect(dbConfig.url);
