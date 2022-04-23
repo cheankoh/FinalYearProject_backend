@@ -15,10 +15,10 @@ app.use(bodyParser.json());
 // parse requests of content-type - application/x-www-form-urlencoded
 app.use(bodyParser.urlencoded({ extended: true }));
 
-require("../app/routes/users.routes")(app);
+require("./app/routes/users.routes")(app);
 
 //Database connection
-const db = require("../app/models");
+const db = require("./app/models");
 db.mongoose
     .connect(process.env.MONGODB_URI || db.url, {
         useNewUrlParser: true,
