@@ -1,209 +1,105 @@
 const db = require("../models");
-const BookInfo = db.books_info;
-const BookContent = db.books_content;
-const UserBooks = db.user_books;
-const Book = db.books_info;
 const User = db.users;
+const Nft = db.nonFungibleTokens;
+const Claim = db.claims;
+const Auction = db.auctions;
+const Bid = db.bids;
 
-// Retrieve all BookTitles(Infos) owned by & shared to the user.
-exports.getAllTitles = async (req, res) => {
-  var sharedBooks = [];
-  var ownedBooks = [];
-  const userID = req.query.userid;
-  var condition = { user_id: userID };
+// Link metamask wallet
+exports.getAllAuctions = (req, res) => {
+    let now = Date.now();
+    var condition = { bid_end_time: { $gt: now }, bid_start_time: { $lte: now } }
+    Auction.find(condition).then(data => {
+        // Check if NFT exists
+        if (!data)
+            res.status(500).send({ message: "User not found" }).end();
 
-  // Retrieve all audiobooks accesible by the user, be it uploaded or shared
-  await UserBooks.find(condition)
-    .then((userbooks) => {
-      var bar = new Promise(async (resolve) => {
-
-        for (const userbook of userbooks) {
-          condition = { _id: userbook.book_id };
-          await BookInfo.find(condition).then((bookInfo) => {
-            let renamed = {
-              'title': userbook.book_title,
-              ...bookInfo[0]['_doc']
-            }
-            renamed['book_id'] = renamed['_id'];
-            delete renamed['_id'];
-
-            //Push Userbook to shared/owned array
-            if (bookInfo[0].ownerUserID == userbook.user_id) {
-              ownedBooks.push(renamed);
-            } else {
-              sharedBooks.push(renamed);
-            }
-          });
-        } resolve()
-      });
-
-      bar.then(() => {
-        res.send({ "OwnedBooks": ownedBooks, "SharedBooks": sharedBooks });
-      });
-
+        // Update the name of NFT
+        res.status(200).send({ auctions: data });
     })
-    .catch((err) => {
-      console.error(err);
-      res.status(500).send({
-        message: err.message || "Some error occurred while retrieving books.",
-      });
-    });
+}
 
-};
+// Bid for NFT that is being auctioned
+exports.bid = (req, res) => {
+    var condition = { _id: req.body.id }
+    User.findOne(condition).then(user => {
+        // Check if user is found
+        if (!user) res.status(500).send({ message: "User not found." }).end();
+        // Check if user has enough to bid
+        if (user.token_amount < req.body.amount)
+            res.status(500).send({ message: "Insufficient amount of token." }).end();
 
-// Find a specified Book and its contents
-exports.findOne = (req, res) => {
-  const id = req.params.id;
-  var condition = { bookID: id };
+        condition = { _id: req.body.auction_id };
 
-  BookContent.find(condition)
-    .then((data) => {
-      if (!data)
-        res.status(404).send({ message: "Not found Book with id " + id });
-      else res.send(data);
-    })
-    .catch((err) => {
-      res.status(500).send({ message: "Error retrieving Book with id=" + id });
-    });
-};
+        Auction.findOne(condition).then(data => {
+            // Check if the auction is expired
+            if (data && data.bid_end_time < req.body.bid_time)
+                res.status(500).send({ message: "The auction has ended." }).end();
 
-// Update the name of the specified Book
-exports.updateName = (req, res) => {
-  var condition = { user_id: req.body.user_id, book_id: req.params.id };
-  UserBooks.find(condition).then((data) => {
-    if (data) {
-      condition = { _id: data[0]._id }
-      UserBooks.findByIdAndUpdate(condition, { $set: { book_title: req.body.newBookTitle } })
-        .then((data) => {
-          res.status(200).send({ message: "Name changed sucessfully" });
-        });
-    }
-    else {
-      res.status(500).send({ message: "Error retrieving Book with id=" + req.params.id });
-    }
-  })
-    .catch((err) => {
-      res.status(500).send({ message: "Error retrieving Book with id=" + req.params.id });
-    });
-};
+            // Otherwise, deduct from the user tokenAmount and create bid model
+            // Deduct amount from user
+            let balance = parseInt(user.token_amount) - parseInt(req.body.amount);
+            User.findByIdAndUpdate(req.body.id, { $set: { token_amount: balance } })
+                .catch((err) => console.log(err.message));
 
-//Get the progress of the specifed user and book.
-exports.getProgress = (req, res) => {
-  const bookID = req.params.id;
-  const userID = req.query.userid;
-
-  var condition = { book_id: bookID, user_id: userID };
-
-  UserBooks.findOne(condition)
-    .then((data) => {
-      if (!data)
-        res.status(404).send({ message: "Progress Not found" })
-      else res.send(data);
-    })
-    .catch((err) => {
-      res.status(500).send({ message: "Error retrieving Progress" });
-    });
-};
-
-//Update the progress of the specifed user and book.
-exports.updateProgress = (req, res) => {
-  const bookID = req.params.id;
-  const userID = req.query.userid;
-  const newPage = req.body.current_page;
-  const newSentence = req.body.current_sentence;
-  var condition = { book_id: bookID, user_id: userID };
-
-  UserBooks.updateOne(condition, { $set: { currentPage: newPage, currentSentence: newSentence } })
-    .then((data) => {
-      if (!data)
-        res.status(404).send({ message: "UserBooks Not found" })
-      else res.send(data);
-    })
-    .catch((err) => {
-      res.status(500).send({ message: "Error updating Progress" });
-    });
-};
-
-
-// Delete a Book with the specified id in the request
-exports.delete = (req, res) => {
-  const id = req.params.id;
-  var condition = { _id: id };
-  var ownerUserData;
-  // Check if the user is the owner of the book
-  Book.findOne(condition).then(bookData => {
-    if (bookData) {
-      // If owner requests delete
-      if (bookData.ownerUserID == req.query.user_id) {
-        User.findOne({ _id: req.query.user_id }).then((data) => ownerUserData = data);
-
-        condition = { bookID: id };
-
-        // Delete from BookContent Entity
-        BookContent.deleteOne(condition).then((data) => {
-          if (data.n != 1) {
-            res.status(404).send({ message: `Cannot delete BookContent with id=${id}. Book was not found!` });
-          }
-        }).catch((err) => {
-          res.status(500).send({ message: `DB server internal error` });
-        });
-
-        // Delete from BookInfo Entity
-        condition = { _id: id };
-        BookInfo.deleteOne(condition).then((data) => {
-          if (data.n != 1) {
-            res.status(404).send({ message: `Cannot delete BookInfo with id=${id}. Book was not found!` });
-          }
-        }).catch((err) => {
-          res.status(500).send({ message: `DB server internal error` });
-        });
-
-        // Add notifications to those recipients who were shared by the owner that the book has been deleted
-        condition = { book_id: id };
-        UserBooks.find(condition)
-          .then((userbooks) => {
-            for (const userbook of userbooks) {
-              if (userbook.user_id != req.query.user_id) {
-                condition = { _id: userbook.user_id }
-                User.findOne(condition).then((sharedUserData) => {
-                  // update recipient user notifications
-                  var notificationStr = ownerUserData.name + " has deleted the shared book \"" + bookData.pdfName + "\".";
-                  sharedUserData.notifications.push(notificationStr);
-
-                  User.findByIdAndUpdate(sharedUserData._id, { $set: { notifications: sharedUserData.notifications } }).catch((err) => {
+            // Create Bid model
+            const newBid = new Bid({
+                user_id: req.body.id,
+                auction_id: req.body.auction_id,
+                amount: req.body.amount,
+                blockchain_status: false
+            })
+            // Save bid in the database 
+            newBid.save(newBid)
+                .then(() => { res.status(201).send({ message: "You've succesfully bid for the NFT" }) })
+                .catch(err => {
                     console.log(err.message);
-                  });
-                });
-              }
-            }
-          });
-        // Delete from UserBooks (Recipients can no longer access the book)
-        condition = { book_id: id };
-        UserBooks.deleteMany(condition).then((data) => {
-          if (data.n != 0) {
-            res.status(204).send();
-          } else {
-            res.status(404).send({ message: `Cannot delete UserBooks with id=${id}. Book was not found!` });
-          }
-        }).catch((err) => {
-          res.status(500).send({ message: `DB server internal error` });
+                    res.status(500).send({ message: "You've failed to bid the NFT" });
+                })
         });
-      } else {
-        // If the recipient of the book requests delete
-        condition = { book_id: id, user_id: req.query.user_id };
-        UserBooks.deleteOne(condition).then((data) => {
-          if (data.n == 1) {
-            res.status(204).send();
-          } else {
-            res.status(404).send({ message: `Cannot delete UserBooks with id=${id}. Book was not found!` });
-          }
-        }).catch((err) => {
-          res.status(500).send({ message: `DB server internal error` });
-        });
-      }
-    }
-  }).catch((err) => {
-    res.status(404).send({ message: `Book with id=${id}. not found` });
-  });
+    });
+}
 
-};
+// Level up his/her NFT
+exports.levelUp = (req, res) => {
+    var condition = { _id: req.body.nft_id }
+    Nft.findOne(condition).then(data => {
+        // Check if NFT exists
+        if (!data) res.status(500).send({ message: "NFT not found" }).end();
+
+        // Deduct amount from user to levelUp
+        User.findById(req.body.id, (err, user) => {
+            if (err) res.status(500).send({ message: "User not found" }).end();
+            user.token_amount = parseInt(user.token_amount);
+            req.body.amount = parseInt(req.body.amount);
+            // Check if user has enough to level up
+            if (user.token_amount < req.body.amount)
+                res.status(500).send({ message: "Insufficient amount of token." }).end();
+            user.token_amount -= req.body.amount;
+            user.save((err) => {
+                if (err) res.status(500).send({ message: "Deduction of amount on user failed" }).end();
+            })
+
+            // Update the level of NFT
+            Nft.findByIdAndUpdate(data.id, { $set: { level: data.level + 1, blockchain_status: false } })
+                .then(() => { res.status(204).send({ message: "You've succesfully leveled up the NFT to " + (data.level + 1) }) })
+                .catch((err) => console.log(err.message));
+        })
+    }).catch((err) => console.log(err.message));
+}
+
+// Change the name of NFT
+exports.changeName = (req, res) => {
+    var condition = { _id: req.body.nft_id }
+
+    Nft.findOne(condition).then(data => {
+        // Check if NFT exists
+        if (!data)
+            res.status(500).send({ message: "NFT not found" }).end();
+
+        // Update the name of NFT
+        Nft.findByIdAndUpdate(data.id, { $set: { name: req.body.name, blockchain_status: false } })
+            .then(() => res.status(204).send({ message: "You've succesfully the name of your NFT to " + req.body.name }))
+            .catch((err) => console.log(err.message));
+    })
+}

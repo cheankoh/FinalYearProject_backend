@@ -3,11 +3,10 @@ const bodyParser = require("body-parser");
 const cors = require("cors");
 
 const app = express();
-require("dotenv").config();
 
 var corsOptions = {
-    //   origin: "http://localhost:8081"
-    origin: "https://ecstatic-lichterman-fad233.netlify.app",
+    origin: "http://localhost:8081"
+    // origin: "https://aqueous-stream-78468.herokuapp.com/",
 };
 
 app.use(cors(corsOptions));
@@ -16,8 +15,6 @@ app.use(bodyParser.json());
 // parse requests of content-type - application/x-www-form-urlencoded
 app.use(bodyParser.urlencoded({ extended: true }));
 
-require("./app/routes/books.routes")(app);
-require("./app/routes/upload.routes")(app);
 require("./app/routes/users.routes")(app);
 
 //Database connection
@@ -26,7 +23,6 @@ db.mongoose
     .connect(process.env.MONGODB_URI || db.url, {
         useNewUrlParser: true,
         useUnifiedTopology: true,
-        useFindAndModify: false,
     })
     .then(() => {
         console.log("Connected to the database!");
@@ -42,8 +38,13 @@ if (process.env.NODE_ENV === "production") {
 
 // simple route for testing
 app.get("/", (req, res) => {
-    res.json({ message: "Welcome to jay's application." });
+    res.json({ message: "Welcome to cheankoh's application." });
 });
+
+// Every 5 sec checks for the blocks and filter the events
+// setTimeout(() => {
+
+// }, 5000)
 
 // set port, listen for requests
 const PORT = process.env.PORT || 8081;
