@@ -32,9 +32,9 @@ db.mongoose
         process.exit();
     });
 
-if (process.env.NODE_ENV === "production") {
-    app.use(express.static("./client/build"));
-}
+// if (process.env.NODE_ENV === "production") {
+//     app.use(express.static("./client/build"));
+// }
 
 // simple route for testing
 app.get("/", (req, res) => {
