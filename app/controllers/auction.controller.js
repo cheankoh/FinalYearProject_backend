@@ -22,16 +22,14 @@ exports.getAllAuctions = (req, res) => {
 exports.getAllAuctionsNft = (req, res) => {
     var condition = {}
     var nftList = []
-    console.log(req.body.nftIds);
-    console.log(typeof req.body.nftIds);
-    // req.body.nftIds.forEach((id) => {
-    //     condition = { _id: id }
-    //     Nft.findOne(condition).then(nft => {
-    //         if (!nft)
-    //             res.status(500).send({ message: "Retrieving nft failed." }).end();
+    req.body.nftIds.forEach((id) => {
+        condition = { _id: id }
+        Nft.findOne(condition).then(nft => {
+            if (!nft)
+                res.status(500).send({ message: "Retrieving nft failed." }).end();
 
-    //         nftList.push(nft)
-    //     })
-    // });
-    // res.status(200).send({ nftList: nftList });
+            nftList.push(nft)
+        })
+    });
+    res.status(200).send({ nftList: nftList });
 }

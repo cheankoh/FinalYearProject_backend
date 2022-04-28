@@ -18,6 +18,7 @@
   },
   "homepage": "https://github.com/cheankoh/FinalYearProject_backend#readme",
   "devDependencies": {
+    "axios": "^0.27.2",
     "body-parser": "^1.19.2",
     "cors": "^2.8.5",
     "ethers": "^5.6.2",
