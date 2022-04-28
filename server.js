@@ -16,6 +16,7 @@ app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 
 require("./app/routes/users.routes")(app);
+require("./app/routes/auctions.routes")(app);
 
 //Database connection
 const db = require("./app/models");

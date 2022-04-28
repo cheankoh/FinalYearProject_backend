@@ -5,8 +5,7 @@ module.exports = app => {
     var router = require("express").Router();
 
     // Get ongoing auctions
-    router.post("/getAllAuctions", auctions.getAllAuctions);
+    router.get("/getAllAuctions", auctions.getAllAuctions);
 
-
-    app.use('/api/', router);
+    app.use('/api/auction', router);
 };
