@@ -7,7 +7,7 @@ module.exports = app => {
     // Get ongoing auctions
     router.get("/getAllAuctions", auctions.getAllAuctions);
 
-    router.get("/getAllAuctionsNft", auctions.getAllAuctionsNft);
+    router.post("/getAllAuctionsNft", auctions.getAllAuctionsNft);
 
     app.use('/api/auction', router);
 };
