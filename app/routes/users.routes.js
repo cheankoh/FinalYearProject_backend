@@ -8,7 +8,7 @@ module.exports = app => {
   router.post("/login", users.login);
 
   // Link Metamask wallet to the account
-  router.post("/login", users.linkWallet);
+  router.put("/linkWallet", users.linkWallet);
 
   // Claim its steps for steptokens.
   router.post("/claim", users.claim);
